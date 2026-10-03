@@ -29,6 +29,7 @@ load().then(function(D){var nt=norm(t),hits=[],cont=new Array(D.length).fill(0);
 D.forEach(function(b,li){b.c.forEach(function(ch,ci){ch.forEach(function(x,vi){if(pos(norm(x.normalize('NFC')),nt,0)>-1){hits.push([li,ci,vi]);cont[li]++}})})});
 S={t:t,nt:nt,hits:hits,cont:cont,f:-1,m:50};render()}).catch(function(){info.textContent='Não foi possível carregar a busca agora.'})}
 document.getElementById('f').onsubmit=function(e){e.preventDefault();history.replaceState(null,'','?q='+encodeURIComponent(q.value));run(q.value)};
+q.addEventListener('input',function(){if(q.value.trim()===''){S=null;out.textContent='';chips.textContent='';info.textContent='';mais.style.display='none';history.replaceState(null,'',location.pathname)}});
 var p=new URLSearchParams(location.search).get('q');if(p){q.value=p;run(p)}})();
 </script></div></main><footer><div class="w"><p><a href="/sobre/">Sobre</a> · <a href="/contato/">Contato</a> · <a href="/privacidade/">Política de Privacidade</a> · <a href="/termos/">Termos de uso</a></p>
 <p>Todas as Escrituras em português citadas são da Bíblia Livre (BLIVRE), Copyright © Diego Santos, Mario Sérgio e Marco Teles, http://sites.google.com/site/biblialivre/ – fevereiro de 2018. Licença <a href="https://creativecommons.org/licenses/by/4.0/br/" target="_blank" rel="noopener">Creative Commons Atribuição 4.0 Brasil</a>. Reprodução permitida desde que devidamente mencionados fonte e autores.</p>

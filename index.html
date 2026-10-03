@@ -877,7 +877,7 @@ const VS = {b:{nome:'Bíblia Livre (BLIVRE, 2018)',z:'H4sIAIuAvWoC/6y9zY4kx5Eu+i
       res.textContent = B.hits.length ? `“${B.t}” aparece em ${B.hits.length} versículo(s), em ${livros} livro(s).` : `Nenhum versículo encontrado para “${B.t}”. Tente outra palavra.`;
       box.appendChild(res);
       const fechar = document.createElement('button'); fechar.type = 'button'; fechar.className = 'text-[11px] underline text-slate-500 mb-3'; fechar.textContent = 'Limpar busca';
-      fechar.onclick = () => { box.classList.add('hidden'); BUSCA = null; document.getElementById('biblia-busca-q').value = ''; };
+      fechar.onclick = () => { document.getElementById('biblia-busca-q').value = ''; limparBusca(); };
       box.appendChild(fechar);
       if (!B.hits.length) return;
       const chips = document.createElement('div'); chips.className = 'flex flex-wrap gap-1.5 mb-4';
@@ -916,6 +916,13 @@ const VS = {b:{nome:'Bíblia Livre (BLIVRE, 2018)',z:'H4sIAIuAvWoC/6y9zY4kx5Eu+i
         setTimeout(() => row.classList.remove('bg-amber-200', 'dark:bg-amber-900/50'), 3500);
       }
     }
+    function limparBusca() {
+      BUSCA = null;
+      const box = document.getElementById('biblia-busca-res'); box.textContent = ''; box.classList.add('hidden');
+      document.getElementById('biblia-voltar').classList.add('hidden');
+    }
+    // Ao apagar o texto do campo (inclusive pelo "x"), os resultados somem sozinhos
+    document.getElementById('biblia-busca-q').addEventListener('input', function () { if (this.value.trim() === '') limparBusca(); });
     function voltarBusca() {
       document.getElementById('biblia-voltar').classList.add('hidden');
       const box = document.getElementById('biblia-busca-res'); box.classList.remove('hidden'); box.scrollIntoView({ behavior: 'smooth', block: 'start' });
