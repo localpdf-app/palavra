@@ -1,0 +1,8 @@
+COMO PUBLICAR O SITE
+1) Envie TODO o conteúdo desta pasta para uma hospedagem de sites estáticos (Cloudflare Pages, Netlify ou GitHub Pages, que têm plano gratuito). A pasta já tem a página inicial (index.html) na raiz.
+2) Aponte o seu domínio para essa hospedagem.
+3) IMPORTANTE: troque o texto https://SEUDOMINIO.com.br pelo seu endereço real em todos os arquivos (sitemap.xml, robots.txt e as páginas). Num editor como o VS Code use "Localizar e substituir em todos os arquivos". Ou peça que eu gere o site de novo já com o domínio certo.
+4) Preencha os campos amarelos das páginas /sobre/, /contato/, /privacidade/ e /termos/ (os arquivos index.html dentro de cada pasta).
+5) Depois de publicar, envie o sitemap.xml no Google Search Console.
+6) Anúncios: o código do AdSense entra nos espaços marcados como <div class="ad"></div>, e só depois da aprovação.
+Estrutura: /biblia/livro/capitulo/ · /versiculos/tema/ · /devocionais/ · /busca/

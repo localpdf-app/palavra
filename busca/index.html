@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buscar na Bíblia | Portal Palavra &amp; Vida</title><meta name="description" content="Busque palavras e versículos em toda a Bíblia Livre.">
+<link rel="canonical" href="https://SEUDOMINIO.com.br/busca/"><meta name="robots" content="noindex,follow">
+<meta property="og:type" content="website"><meta property="og:title" content="Buscar na Bíblia | Portal Palavra &amp; Vida"><meta property="og:description" content="Busque palavras e versículos em toda a Bíblia Livre."><meta property="og:url" content="https://SEUDOMINIO.com.br/busca/"><meta property="og:locale" content="pt_BR">
+<link rel="stylesheet" href="/assets/estilo.css">
+</head><body><header class="top"><div class="w"><a class="logo" href="/">Portal Palavra &amp; Vida</a>
+<nav aria-label="Principal"><a href="/biblia/">Bíblia</a><a href="/versiculos/">Versículos</a><a href="/devocionais/">Devocionais</a></nav>
+<form action="/busca/" method="get" role="search"><input type="search" name="q" placeholder="Buscar na Bíblia" aria-label="Buscar na Bíblia"><button type="submit">Buscar</button></form></div></header><main><div class="w"><h1>Buscar na Bíblia</h1><p class="sub">Busca em toda a Bíblia Livre. Não diferencia acentos nem maiúsculas.</p>
+<form id="f" role="search" style="display:flex;gap:8px;margin-bottom:14px"><input id="q" type="search" required minlength="3" placeholder="Ex.: pastor, paz, esperança" aria-label="Palavra a buscar" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)"><button class="btn" type="submit">Buscar</button></form>
+<p id="info" class="sub" role="status"></p><div id="out"></div>
+<script>
+(function(){var DB=null,q=document.getElementById('q'),out=document.getElementById('out'),info=document.getElementById('info');
+function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function load(){return DB?Promise.resolve(DB):fetch('/assets/blivre.json').then(function(r){return r.json()}).then(function(d){return DB=d})}
+function run(t){t=t.trim();if(t.length<3)return;info.textContent='Buscando…';out.textContent='';
+load().then(function(D){var nt=norm(t),n=0,MAX=80,frag=document.createDocumentFragment();
+D.forEach(function(b){b.c.forEach(function(ch,ci){ch.forEach(function(x,vi){var k=norm(x).indexOf(nt);if(k<0)return;n++;if(n>MAX)return;
+var d=document.createElement('div');d.className='v';var a=document.createElement('a');a.href='/biblia/'+b.s+'/'+(ci+1)+'/#v'+(vi+1);a.textContent=b.n+' '+(ci+1)+':'+(vi+1);d.appendChild(a);
+d.appendChild(document.createTextNode(x.slice(0,k)));var m=document.createElement('mark');m.textContent=x.slice(k,k+t.length);d.appendChild(m);d.appendChild(document.createTextNode(x.slice(k+t.length)));frag.appendChild(d)})})});
+info.textContent=n?(n>MAX?n+' versículos encontrados. Mostrando os '+MAX+' primeiros.':n+' versículo(s) encontrado(s).'):'Nenhum versículo encontrado. Tente outra palavra.';out.appendChild(frag)}).catch(function(){info.textContent='Não foi possível carregar a busca agora.'})}
+document.getElementById('f').onsubmit=function(e){e.preventDefault();history.replaceState(null,'','?q='+encodeURIComponent(q.value));run(q.value)};
+var p=new URLSearchParams(location.search).get('q');if(p){q.value=p;run(p)}})();
+</script></div></main><footer><div class="w"><p><a href="/sobre/">Sobre</a> · <a href="/contato/">Contato</a> · <a href="/privacidade/">Política de Privacidade</a> · <a href="/termos/">Termos de uso</a></p>
+<p>Todas as Escrituras em português citadas são da Bíblia Livre (BLIVRE), Copyright © Diego Santos, Mario Sérgio e Marco Teles, http://sites.google.com/site/biblialivre/ – fevereiro de 2018. Licença <a href="https://creativecommons.org/licenses/by/4.0/br/" target="_blank" rel="noopener">Creative Commons Atribuição 4.0 Brasil</a>. Reprodução permitida desde que devidamente mencionados fonte e autores.</p>
+<p>© 2026 Portal Palavra &amp; Vida</p></div></footer>
+<div id="ck" role="region" aria-label="Aviso de cookies"><span>Usamos cookies para melhorar a experiência e exibir anúncios. Saiba mais na <a href="/privacidade/">Política de Privacidade</a>.</span><button id="ck-ok">Entendi</button></div>
+<script>(function(){var v=false;try{v=localStorage.getItem('ck')==='1'}catch(e){}var b=document.getElementById('ck');if(!v)b.style.display='flex';document.getElementById('ck-ok').onclick=function(){b.style.display='none';try{localStorage.setItem('ck','1')}catch(e){}}})();</script></body></html>
