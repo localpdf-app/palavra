@@ -6,19 +6,28 @@
 <link rel="stylesheet" href="/assets/estilo.css">
 </head><body><header class="top"><div class="w"><a class="logo" href="/">Portal Palavra &amp; Vida</a>
 <nav aria-label="Principal"><a href="/biblia/">Bíblia</a><a href="/versiculos/">Versículos</a><a href="/devocionais/">Devocionais</a></nav>
-<form action="/busca/" method="get" role="search"><input type="search" name="q" placeholder="Buscar na Bíblia" aria-label="Buscar na Bíblia"><button type="submit">Buscar</button></form></div></header><main><div class="w"><h1>Buscar na Bíblia</h1><p class="sub">Busca em toda a Bíblia Livre. Não diferencia acentos nem maiúsculas.</p>
+<form action="/busca/" method="get" role="search"><input type="search" name="q" placeholder="Buscar na Bíblia" aria-label="Buscar na Bíblia"><button type="submit">Buscar</button></form></div></header><main><div class="w"><h1>Buscar na Bíblia</h1><p class="sub">Digite uma palavra e veja em quais livros ela aparece. A busca encontra palavras que começam com o que você digitou e não diferencia acentos.</p>
 <form id="f" role="search" style="display:flex;gap:8px;margin-bottom:14px"><input id="q" type="search" required minlength="3" placeholder="Ex.: pastor, paz, esperança" aria-label="Palavra a buscar" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)"><button class="btn" type="submit">Buscar</button></form>
-<p id="info" class="sub" role="status"></p><div id="out"></div>
+<p id="info" class="sub" role="status"></p><div id="chips" class="grid liv" style="margin-bottom:14px"></div><div id="out"></div><p><button id="mais" class="btn" style="display:none" type="button">Mostrar mais</button></p>
 <script>
-(function(){var DB=null,q=document.getElementById('q'),out=document.getElementById('out'),info=document.getElementById('info');
+(function(){var DB=null,S=null,q=document.getElementById('q'),out=document.getElementById('out'),info=document.getElementById('info'),chips=document.getElementById('chips'),mais=document.getElementById('mais');
 function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function pos(nx,nt,de){var i=nx.indexOf(nt,de);while(i>-1){if(i===0||!/\p{L}/u.test(nx[i-1]))return i;i=nx.indexOf(nt,i+1)}return -1}
 function load(){return DB?Promise.resolve(DB):fetch('/assets/blivre.json').then(function(r){return r.json()}).then(function(d){return DB=d})}
-function run(t){t=t.trim();if(t.length<3)return;info.textContent='Buscando…';out.textContent='';
-load().then(function(D){var nt=norm(t),n=0,MAX=80,frag=document.createDocumentFragment();
-D.forEach(function(b){b.c.forEach(function(ch,ci){ch.forEach(function(x,vi){var k=norm(x).indexOf(nt);if(k<0)return;n++;if(n>MAX)return;
-var d=document.createElement('div');d.className='v';var a=document.createElement('a');a.href='/biblia/'+b.s+'/'+(ci+1)+'/#v'+(vi+1);a.textContent=b.n+' '+(ci+1)+':'+(vi+1);d.appendChild(a);
-d.appendChild(document.createTextNode(x.slice(0,k)));var m=document.createElement('mark');m.textContent=x.slice(k,k+t.length);d.appendChild(m);d.appendChild(document.createTextNode(x.slice(k+t.length)));frag.appendChild(d)})})});
-info.textContent=n?(n>MAX?n+' versículos encontrados. Mostrando os '+MAX+' primeiros.':n+' versículo(s) encontrado(s).'):'Nenhum versículo encontrado. Tente outra palavra.';out.appendChild(frag)}).catch(function(){info.textContent='Não foi possível carregar a busca agora.'})}
+function hl(el,tx,nt){tx=tx.normalize('NFC');var nx=norm(tx),p=0,i;while((i=pos(nx,nt,p))>-1){el.appendChild(document.createTextNode(tx.slice(p,i)));var m=document.createElement('mark');m.textContent=tx.slice(i,i+nt.length);el.appendChild(m);p=i+nt.length}el.appendChild(document.createTextNode(tx.slice(p)))}
+function render(){out.textContent='';chips.textContent='';var livros=S.cont.filter(function(n){return n>0}).length;
+info.textContent=S.hits.length?'“'+S.t+'” aparece em '+S.hits.length+' versículo(s), em '+livros+' livro(s).':'Nenhum versículo encontrado para “'+S.t+'”. Tente outra palavra.';
+mais.style.display='none';if(!S.hits.length)return;
+function chip(rot,idx){var a=document.createElement('a');a.href='#';a.textContent=rot;if(S.f===idx)a.setAttribute('aria-current','page');a.onclick=function(e){e.preventDefault();S.f=idx;S.m=50;render()};chips.appendChild(a)}
+chip('Todos ('+S.hits.length+')',-1);S.cont.forEach(function(n,li){if(n>0)chip(DB[li].n+' · '+n,li)});
+var l=S.f<0?S.hits:S.hits.filter(function(h){return h[0]===S.f});
+l.slice(0,S.m).forEach(function(h){var b=DB[h[0]],d=document.createElement('div');d.className='v';var a=document.createElement('a');a.href='/biblia/'+b.s+'/'+(h[1]+1)+'/#v'+(h[2]+1);a.textContent=b.n+' '+(h[1]+1)+':'+(h[2]+1);d.appendChild(a);hl(d,b.c[h[1]][h[2]],S.nt);out.appendChild(d)});
+if(l.length>S.m){mais.style.display='inline-block';mais.textContent='Mostrar mais ('+(l.length-S.m)+' restantes)'}}
+mais.onclick=function(){S.m+=50;render()};
+function run(t){t=t.trim();if(t.length<3)return;info.textContent='Buscando…';out.textContent='';chips.textContent='';
+load().then(function(D){var nt=norm(t),hits=[],cont=new Array(D.length).fill(0);
+D.forEach(function(b,li){b.c.forEach(function(ch,ci){ch.forEach(function(x,vi){if(pos(norm(x.normalize('NFC')),nt,0)>-1){hits.push([li,ci,vi]);cont[li]++}})})});
+S={t:t,nt:nt,hits:hits,cont:cont,f:-1,m:50};render()}).catch(function(){info.textContent='Não foi possível carregar a busca agora.'})}
 document.getElementById('f').onsubmit=function(e){e.preventDefault();history.replaceState(null,'','?q='+encodeURIComponent(q.value));run(q.value)};
 var p=new URLSearchParams(location.search).get('q');if(p){q.value=p;run(p)}})();
 </script></div></main><footer><div class="w"><p><a href="/sobre/">Sobre</a> · <a href="/contato/">Contato</a> · <a href="/privacidade/">Política de Privacidade</a> · <a href="/termos/">Termos de uso</a></p>

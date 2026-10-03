@@ -155,6 +155,17 @@
           </div>
         </div>
 
+        <!-- BUSCA POR PALAVRA -->
+        <div class="mb-6">
+          <form onsubmit="executarBuscaBiblia(event)" class="flex gap-2" role="search">
+            <input id="biblia-busca-q" type="search" minlength="3" required placeholder="Não lembra onde está? Digite uma palavra (ex.: esperança, pastor)" aria-label="Buscar uma palavra na Bíblia" class="flex-1 w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+            <button type="submit" class="bg-indigo-950 dark:bg-indigo-900 hover:bg-indigo-900 text-white font-bold text-xs px-5 rounded-xl transition">Buscar</button>
+          </form>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">A busca encontra palavras que começam com o que você digitou e não diferencia acentos.</p>
+          <div id="biblia-busca-res" class="hidden mt-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50" aria-live="polite"></div>
+          <button id="biblia-voltar" type="button" onclick="voltarBusca()" class="hidden mt-3 text-xs font-bold text-indigo-700 dark:text-amber-400 underline">‹ Voltar aos resultados da busca</button>
+        </div>
+
         <!-- SELEÇÃO DOS 66 LIVROS -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
           <div>
@@ -807,6 +818,7 @@ const VS = {b:{nome:'Bíblia Livre (BLIVRE, 2018)',z:'H4sIAIuAvWoC/6y9zY4kx5Eu+i
         vs.forEach((t, i) => {
           const row = document.createElement('div');
           row.className = 'flex items-start justify-between gap-2 group py-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 px-2 rounded-lg transition';
+          row.dataset.v = i + 1;
           const p = document.createElement('p'); p.className = 'leading-relaxed flex-grow';
           const sup = document.createElement('sup'); sup.className = 'text-xs text-indigo-700 dark:text-amber-400 font-bold mr-1.5 select-none'; sup.textContent = i + 1;
           const sp = document.createElement('span'); sp.textContent = t; p.append(sup, sp);
@@ -819,6 +831,94 @@ const VS = {b:{nome:'Bíblia Livre (BLIVRE, 2018)',z:'H4sIAIuAvWoC/6y9zY4kx5Eu+i
       } catch (err) {
         container.innerHTML = `<p class="text-slate-500 font-sans text-xs">Não foi possível carregar o capítulo agora. Atualize a página ou use um navegador mais recente.</p>`;
       }
+    }
+
+    // ---------- BUSCA NA BÍBLIA ----------
+    let BUSCA = null;
+    function normBusca(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+    function acharPos(nx, nt, de) {
+      let i = nx.indexOf(nt, de);
+      while (i > -1) {
+        if (i === 0 || !/\p{L}/u.test(nx[i - 1])) return i;
+        i = nx.indexOf(nt, i + 1);
+      }
+      return -1;
+    }
+    function realcar(el, texto, nt) {
+      texto = texto.normalize('NFC'); const nx = normBusca(texto); let pos = 0, i;
+      while ((i = acharPos(nx, nt, pos)) > -1) {
+        el.appendChild(document.createTextNode(texto.slice(pos, i)));
+        const m = document.createElement('mark'); m.className = 'bg-amber-300/70 dark:bg-amber-500/40 text-inherit rounded px-0.5';
+        m.textContent = texto.slice(i, i + nt.length); el.appendChild(m); pos = i + nt.length;
+      }
+      el.appendChild(document.createTextNode(texto.slice(pos)));
+    }
+    async function executarBuscaBiblia(e) {
+      if (e) e.preventDefault();
+      const t = document.getElementById('biblia-busca-q').value.trim();
+      const box = document.getElementById('biblia-busca-res');
+      document.getElementById('biblia-voltar').classList.add('hidden');
+      if (t.length < 3) return;
+      box.classList.remove('hidden'); box.textContent = 'Buscando…';
+      try {
+        const D = await carregarBiblia(versaoBib), nt = normBusca(t), hits = [], cont = new Array(D.length).fill(0);
+        D.forEach((b, li) => b.chapters.forEach((ch, ci) => ch.forEach((x, vi) => {
+          if (acharPos(normBusca(x.normalize('NFC')), nt, 0) > -1) { hits.push([li, ci, vi]); cont[li]++; }
+        })));
+        BUSCA = { t, nt, hits, cont, filtro: -1, mostrar: 50 };
+        renderBusca();
+      } catch (err) { box.textContent = 'Não foi possível buscar agora. Atualize a página e tente de novo.'; }
+    }
+    function renderBusca() {
+      const B = BUSCA, box = document.getElementById('biblia-busca-res'), D = cacheBib[versaoBib];
+      box.textContent = '';
+      const livros = B.cont.filter(n => n > 0).length;
+      const res = document.createElement('p'); res.className = 'text-sm font-bold text-slate-800 dark:text-slate-100 mb-1';
+      res.textContent = B.hits.length ? `“${B.t}” aparece em ${B.hits.length} versículo(s), em ${livros} livro(s).` : `Nenhum versículo encontrado para “${B.t}”. Tente outra palavra.`;
+      box.appendChild(res);
+      const fechar = document.createElement('button'); fechar.type = 'button'; fechar.className = 'text-[11px] underline text-slate-500 mb-3'; fechar.textContent = 'Limpar busca';
+      fechar.onclick = () => { box.classList.add('hidden'); BUSCA = null; document.getElementById('biblia-busca-q').value = ''; };
+      box.appendChild(fechar);
+      if (!B.hits.length) return;
+      const chips = document.createElement('div'); chips.className = 'flex flex-wrap gap-1.5 mb-4';
+      const mk = (rot, idx) => {
+        const b = document.createElement('button'); b.type = 'button'; const on = B.filtro === idx;
+        b.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ' + (on ? 'bg-amber-500 border-amber-500 text-indigo-950' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-amber-500');
+        b.setAttribute('aria-pressed', on); b.textContent = rot; b.onclick = () => { B.filtro = idx; B.mostrar = 50; renderBusca(); }; return b;
+      };
+      chips.appendChild(mk('Todos (' + B.hits.length + ')', -1));
+      B.cont.forEach((n, li) => { if (n > 0) chips.appendChild(mk(D[li].name + ' · ' + n, li)); });
+      box.appendChild(chips);
+      const lista = B.filtro < 0 ? B.hits : B.hits.filter(h => h[0] === B.filtro);
+      lista.slice(0, B.mostrar).forEach(([li, ci, vi]) => {
+        const d = document.createElement('div'); d.className = 'py-2 border-b border-slate-200 dark:border-slate-700 text-sm leading-relaxed';
+        const a = document.createElement('button'); a.type = 'button'; a.className = 'block text-[11px] font-extrabold text-indigo-700 dark:text-amber-400 underline mb-0.5';
+        a.textContent = `${D[li].name} ${ci + 1}:${vi + 1}`; a.onclick = () => irParaVersiculo(li, ci + 1, vi + 1, true);
+        const p = document.createElement('span'); realcar(p, D[li].chapters[ci][vi], B.nt);
+        d.append(a, p); box.appendChild(d);
+      });
+      if (lista.length > B.mostrar) {
+        const mais = document.createElement('button'); mais.type = 'button'; mais.className = 'mt-3 text-xs font-bold px-4 py-2 rounded-xl border border-slate-400';
+        mais.textContent = `Mostrar mais (${lista.length - B.mostrar} restantes)`; mais.onclick = () => { B.mostrar += 50; renderBusca(); }; box.appendChild(mais);
+      }
+    }
+    async function irParaVersiculo(li, cap, v, daBusca) {
+      const chave = ORDEM[li], sel = document.getElementById('biblia-livro'), sc = document.getElementById('biblia-capitulo');
+      sel.value = chave; sc.innerHTML = '';
+      for (let i = 1; i <= totalCapitulos[chave]; i++) { const o = document.createElement('option'); o.value = i; o.textContent = `Capítulo ${i}`; sc.appendChild(o); }
+      sc.value = cap;
+      await carregarTextoBiblico();
+      if (daBusca) { document.getElementById('biblia-busca-res').classList.add('hidden'); document.getElementById('biblia-voltar').classList.remove('hidden'); }
+      const row = document.querySelector('#biblia-conteudo [data-v="' + v + '"]');
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('bg-amber-200', 'dark:bg-amber-900/50');
+        setTimeout(() => row.classList.remove('bg-amber-200', 'dark:bg-amber-900/50'), 3500);
+      }
+    }
+    function voltarBusca() {
+      document.getElementById('biblia-voltar').classList.add('hidden');
+      const box = document.getElementById('biblia-busca-res'); box.classList.remove('hidden'); box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function mudarCapitulo(delta) {
